@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Floating Chatbot (Icon only)</title>
+    <style>
+      :root {
+        --accent: #2563eb;
+        --bg: #fff;
+        --muted: #6b7280;
+        --shadow: 0 10px 25px rgba(2, 6, 23, 0.2);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+      }
+
+      .chat-toggle {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        display: inline-grid;
+        place-items: center;
+        box-shadow: var(--shadow);
+        background: linear-gradient(180deg, var(--accent), #1e40af);
+        border: none;
+        cursor: pointer;
+        z-index: 9999;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+      .chat-toggle:active {
+        transform: scale(0.96);
+      }
+      .chat-toggle img {
+        width: 28px;
+        height: 28px;
+        fill: white;
+        position: absolute;
+      }
+
+      .chat-panel {
+        position: fixed;
+        right: 20px;
+        bottom: 96px;
+        width: 360px;
+        max-width: calc(100vw - 40px);
+        height: 520px;
+        max-height: 80vh;
+        border-radius: 12px;
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform-origin: right bottom;
+        z-index: 9998;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px) scale(0.98);
+        transition: opacity 0.18s ease, transform 0.18s ease;
+      }
+      .chat-panel.open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+      }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #eef2ff;
+        background: linear-gradient(180deg, #f8fbff, #fff);
+      }
+      .chat-header .title {
+        font-weight: 600;
+      }
+      .chat-header .subtitle {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .chat-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        padding: 6px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .messages {
+        padding: 12px;
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: linear-gradient(180deg, #fff, #fbfdff);
+        word-break: break-word; /* Prevent long lines from overflowing */
+        white-space: pre-wrap; /* Preserve line breaks, wrap long text */
+        overflow-wrap: anywhere; /* Force wrapping even for long URLs or file paths */
+      }
+
+      .msg {
+        max-width: 85%; /* Allow messages a bit more room */
+        padding: 10px 12px;
+        border-radius: 12px;
+        line-height: 1.4;
+        word-break: break-word; /* Ensure long words break nicely */
+        white-space: pre-wrap; /* Maintain message formatting */
+      }
+
+      .msg.user {
+        align-self: flex-end;
+        background: #2563eb;
+        color: white;
+        border-bottom-right-radius: 6px;
+      }
+      .msg.bot {
+        align-self: flex-start;
+        background: #f1f5f9;
+        color: #0f172a;
+        border-bottom-left-radius: 6px;
+      }
+
+      .composer {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #eef2ff;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .composer textarea {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #e6eefc;
+        font-size: 14px;
+        resize: none;
+        overflow-y: hidden;
+        height: 40px;
+        line-height: 1.4;
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+
+      .composer button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        height: 40px;
+      }
+
+      .composer button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 420px) {
+        .chat-panel {
+          width: 94vw;
+          right: 3%;
+          bottom: 86px;
+          height: 70vh;
+        }
+        .chat-toggle {
+          right: 10px;
+          bottom: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+      <img
+        src="https://static.wixstatic.com/media/c2b3db_1e6791864a554c16bde4e4a59f8c14da~mv2.png"
+        alt="Chatbot Icon"
+        style="width: 45px; height: 50px"
+      />
+    </button>
+
+    <aside class="chat-panel" id="chatPanel" aria-hidden="true" role="dialog">
+      <div class="chat-header">
+        <div style="display: flex; flex-direction: column">
+          <span class="title">Chat with us</span>
+          <span class="subtitle">Ask me about this website</span>
+        </div>
+        <button class="chat-close" id="chatClose" aria-label="Close chat">
+          ✕
+        </button>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <form class="composer" id="composer">
+        <textarea
+          id="inputMsg"
+          placeholder="Type a message..."
+          rows="1"
+        ></textarea>
+
+        <button id="sendBtn" type="submit">Send</button>
+      </form>
+    </aside>
+
+    <script>
+      const chatToggle = document.getElementById("chatToggle")
+      const chatPanel = document.getElementById("chatPanel")
+      const chatClose = document.getElementById("chatClose")
+      const messagesEl = document.getElementById("messages")
+      const composer = document.getElementById("composer")
+      const inputMsg = document.getElementById("inputMsg")
+
+      const N8N_WEBHOOK_URL =
+        "https://natational-denice-unheroical.ngrok-free.dev/webhook/chatbot"
+
+      function appendMessage(text, who = "bot") {
+        const div = document.createElement("div")
+        div.className = "msg " + (who === "user" ? "user" : "bot")
+        div.textContent = text
+        messagesEl.appendChild(div)
+        messagesEl.scrollTop = messagesEl.scrollHeight
+      }
+
+      async function sendMessageToBot(text) {
+        const website = window.location.origin
+        const res = await fetch(N8N_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, website }),
+        })
+        const data = await res.json()
+        return data.reply || data.answer || "No reply received."
+      }
+
+      composer.addEventListener("submit", async (e) => {
+        e.preventDefault()
+        const text = inputMsg.value.trim()
+        if (!text) return
+        inputMsg.value = ""
+        appendMessage(text, "user")
+
+        const typing = document.createElement("div")
+        typing.className = "msg bot"
+        typing.textContent = "Typing..."
+        messagesEl.appendChild(typing)
+        messagesEl.scrollTop = messagesEl.scrollHeight
+
+        try {
+          const reply = await sendMessageToBot(text)
+          typing.remove()
+          appendMessage(reply, "bot")
+        } catch (err) {
+          typing.textContent = "Error: Unable to reach chatbot."
+          console.error(err)
+        }
+      })
+
+      // ✅ Add this right below
+      inputMsg.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          composer.requestSubmit()
+        }
+      })
+
+      chatToggle.addEventListener("click", () => {
+        chatPanel.classList.toggle("open")
+      })
+      chatClose.addEventListener("click", () =>
+        chatPanel.classList.remove("open")
+      )
+    </script>
+  </body>
+</html>
