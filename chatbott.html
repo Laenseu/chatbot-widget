@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Floating Chatbot (Icon only)</title>
+    <title>ServiceIT+ Bot</title>
     <style>
       :root {
         --accent: #2563eb;
@@ -260,6 +260,14 @@
         } catch (err) {
           typing.textContent = "Error: Unable to reach chatbot."
           console.error(err)
+        }
+      })
+
+      // ✅ Add this right below
+      inputMsg.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          composer.requestSubmit()
         }
       })
 
